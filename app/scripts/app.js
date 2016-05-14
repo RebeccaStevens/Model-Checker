@@ -3,22 +3,34 @@
 
   var app = document.querySelector('#app');
 
+  /**
+   * Return whether or not the given array has a length greater than zero.
+   *
+   * @param {!array} array - an array
+   * @returns {boolean}
+   */
+  app.arrayHasData = function(array) {
+    return array.length > 0;
+  };
+
   window.addEventListener('WebComponentsReady', function() {
 
     /**
      * The data to use.
      */
     app.automata = {values: []};
-    app.liveCompiling = true;
-    app.liveBuilding = true;
-    app.fairAbstraction = true;
     app.helpDialogSelectedTab = 0;
     app.currentBuild = {};
     app.previousBuild = {};
     app.previousCode = '';
+    app.settings = {
+      liveCompiling: true,
+      liveBuilding: true,
+      fairAbstraction: true
+    };
 
     app.compile = function(overrideBuild) {
-      var code = app.getCode();
+      var code = app.code;
 
       if(!overrideBuild){
         // if there is nothing to parse then do not continue
@@ -43,7 +55,7 @@
       // parse the code
       setTimeout(function() {
         var compileStartTime = (new Date()).getTime();
-        var code = app.$.editor.getCode();
+        var code = app.$.editor.code;
         var results = app.$.parser.compile(code);
 
         // check if an error was thrown by the compiler
@@ -55,7 +67,7 @@
           console.log(results.automata);
           app.render(results.automata);
         }
-      }.bind(this), 0); 
+      }.bind(this), 0);
     }
 
     app.interpret = function(results) {
@@ -97,7 +109,7 @@
 
         // either build the automata or use automata built in the previous build
         if(build){
-          definitionMap = app.$.parser.parseDefinition(code, definitionMap, app.liveBuilding, app.fairAbstraction);
+          definitionMap = app.$.parser.parseDefinition(code, definitionMap, app.settings.liveBuilding, app.settings.fairAbstraction);
           app.currentBuild[key] = { code: code, definition: definitionMap[key], built: true };
         }
         else{
@@ -128,7 +140,7 @@
       for(var i = 0; i < results.operations.length; i++){
         operations += results.operations[i].operation;
       }
-      operations = app.$.parser.parseOperations(operations, definitionMap, app.fairAbstraction);
+      operations = app.$.parser.parseOperations(operations, definitionMap, app.settings.fairAbstraction);
 
       var pass = 0;
       var fail = 0;
@@ -137,7 +149,7 @@
         var input = operations[i].input;
         var result = operations[i].result;
         operationsArray.push(input + ' = ' + result);
-          
+
         // increment the tally of results
         if(result){
           pass++;
@@ -168,7 +180,7 @@
       app.automata = {};
       setTimeout(function() {
         app.set('automata.values', automata);
-        
+
         // listen for each rendered event.
         // once all automata have been rendered, log the results and stop listening.
         var automataRendered = 0;
@@ -215,11 +227,11 @@
      */
     app.getCode = function() {
       var code = '';
-      var temp = app.$.editor.getCode();
-      
+      var temp = app.$.editor.code;
+
       // remove white space and line breaks
       temp = temp.replace(/ /g, '');
-      
+
       // remove unnecessary whitespace
       var split = temp.split('\n');
       for(var i = 0; i < split.length; i++){
@@ -246,7 +258,7 @@
         var reader = new FileReader();
         reader.onload = function() {
           var text = reader.result;
-          app.$.editor.setCode(text);
+          app.$.editor.code = text;
           app.$.editor.focus();
         };
         reader.readAsText(input.files[0]);
@@ -258,56 +270,90 @@
      * Save to code the user has written to their computer (as a download).
      */
     app.downloadFile = function() {
-      var filename = app.$['filename'].inputElement.bindValue;
+      var filename = app.$.filename.value;
       // if filename has not been defined set to untitled
       if(filename === ''){
         filename = 'untitled';
       }
 
       var blob = new Blob(
-        [app.$.editor.getCode()],
+        [app.$.editor.code],
         {type: 'text/plain;charset=utf-8'});
       saveAs(blob, filename + '.txt');
     };
 
     /**
-     * Opens the help-dialog.
+     * Open the settings dialog.
+     */
+    app.showSettings = function() {
+      var dialog = app.$['settings-dialog'];
+      dialog.open();
+    };
+
+    /**
+     * Called when the settings dialog is opened.
+     */
+    app.onSettingsOpened = function() {
+      var dialog = app.$['settings-dialog'];
+
+      var d = Polymer.dom(dialog);
+
+      // set the values displayed to what they actually are.
+      // Note: can't use `app.$['...']` syntax here as these element where not in the dom from the beginning.
+      d.querySelector('#settings-live-compiling').checked = app.settings.liveCompiling;
+      d.querySelector('#settings-live-building').checked = app.settings.liveBuilding;
+      d.querySelector('#settings-fair-abstraction').checked = app.settings.fairAbstraction;
+
+      d.querySelector('#settings-editor-wrap').checked = app.$.editor.wrap;
+      d.querySelector('#settings-editor-soft-tabs').checked = app.$.editor.softTabs;
+      d.querySelector('#settings-editor-font-size').value = app.$.editor.fontSize;
+      d.querySelector('#settings-editor-tab-size').value = app.$.editor.tabSize;
+    };
+
+    /**
+     * Called when the settings dialog is closed.
+     */
+    app.onSettingsClosed = function() {
+      var dialog = app.$['settings-dialog'];
+
+      // if 'ok' button was clicked
+      if (dialog.closingReason.confirmed) {
+        var d = Polymer.dom(dialog);
+        var el;
+        var val;
+
+        app.set('settings.liveCompiling', d.querySelector('#settings-live-compiling').checked);
+        app.set('settings.liveBuilding', d.querySelector('#settings-live-building').checked);
+        app.set('settings.fairAbstraction', d.querySelector('#settings-fair-abstraction').checked);
+
+        app.$.editor.wrap = d.querySelector('#settings-editor-wrap').checked;
+        app.$.editor.softTabs = d.querySelector('#settings-editor-soft-tabs').checked;
+
+        // make sure font size has a valid value (ie is not "")
+        el = d.querySelector('#settings-editor-font-size');
+        val = Number.parseInt(el.value, 10);
+        if (val >= Number.parseInt(el.min, 10) && val <= Number.parseInt(el.max, 10)) {
+          app.$.editor.fontSize = val;
+        }
+
+        // make sure tab size has a valid value (ie is not "")
+        el = d.querySelector('#settings-editor-tab-size');
+        val = Number.parseInt(el.value, 10);
+        if (val >= Number.parseInt(el.min, 10) && val <= Number.parseInt(el.max, 10)) {
+          app.$.editor.tabSize = val;
+        }
+      }
+
+      app.$.editor.focus();
+    };
+
+    /**
+     * Opens the help dialog.
      */
     app.showHelp = function() {
       var help = app.$['help-dialog'];
       help.open();
     };
-
-    /**
-     * Simple event listener for when the checkbox in ticked.
-     * Compile is called if it is.
-     */
-    app.$['chbx-live-compiling'].addEventListener('iron-change', function() {
-      if (app.liveCompiling) {
-        app.compile(false);
-      }
-      app.$.editor.focus();
-    });
-
-    /**
-     * Simple event listener for when the live building checkbox is ticked.
-     * Compile is called if live compiling is active.
-     */
-    app.$['chbx-live-building'].addEventListener('iron-change', function() {
-      if(app.liveCompiling){
-        app.compile(false);
-      }
-      app.$.editor.focus();
-    });
-
-    /**
-     * Simple event listener for when the fair abstraction checkbox is ticked.
-     * Compile is called every time the checkbox is ticked or unticked.
-     */
-    app.$['chbx-fair-abstraction'].addEventListener('iron-change', function() {
-      app.compile(true);
-      app.$.editor.focus();
-    });
 
     /**
      * This is the event which triggers when the user selects an automata from the
@@ -338,7 +384,7 @@
      * Only care about this if the live-compiling check-box is ticked.
      */
     document.addEventListener('text-editor-change', function() {
-      if (app.liveCompiling) {
+      if (app.settings.liveCompiling) {
         app.compile();
       }
     });
