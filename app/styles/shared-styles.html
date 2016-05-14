@@ -1,15 +1,59 @@
-<!-- shared styles for all elements and index.html -->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<!--
+  This style data is used for theming the application and the internals of our custom elements (not 3rd party ones).
+-->
 <dom-module id="shared-styles">
   <template>
     <style>
-      .page-title {
-        @apply(--paper-font-display2);
+      paper-material {
+        border-radius: 2px;
+        margin: 8px;
+        padding: 16px 0 16px 0;
+        background: white;
       }
 
+      :root {
+        /* override the shadow styling defined in `paper-styles/shadow.html` - make the shadow blue* /
+        /* elevation="1" */
+        --shadow-elevation-2dp: {
+          box-shadow: 0 2px 2px 0 rgba(30, 42, 116, 0.21),
+                      0 1px 5px 0 rgba(30, 42, 116, 0.18),
+                      0 3px 1px -2px rgba(30, 42, 116, 0.20);
+        };
+        /* elevation="2" */
+        --shadow-elevation-4dp: {
+          box-shadow: 0 4px 5px 0 rgba(30, 42, 116, 0.21),
+                      0 1px 10px 0 rgba(30, 42, 116, 0.18),
+                      0 2px 4px -1px rgba(30, 42, 116, 0.4);
+        };
+      }
+
+      /* Breakpoints */
+
+      /* Small */
       @media (max-width: 600px) {
+
         .page-title {
           font-size: 24px!important;
         }
+
+        paper-material {
+          --menu-container-display: none;
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+
+      }
+
+      /* Tablet+ */
+      @media (min-width: 601px) {
+
+        paper-material {
+          padding-left: 30px;
+          padding-right: 30px;
+        }
+
       }
     </style>
   </template>

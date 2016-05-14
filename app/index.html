@@ -29,309 +29,189 @@
   <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
 
   <link rel="stylesheet" href="styles/main.css">
-  <link rel="stylesheet" href="styles/help-dialog.css">
-
   <script async src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-
   <link rel="import" href="elements/elements.html">
 
-  <style is="custom-style" include="shared-styles">
-  .frame {
-    position: absolute;
-    top: 64px;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    overflow: auto;
-    @apply(--layout-horizontal);
-  }
-  .frame > * > * {
-    margin-top: 4px;
-    margin-right: 8px;
-    margin-bottom: 4px;
-    margin-left: 8px;
-    border: solid 1px var(--dark-primary-color);
-  }
-  .frame > :first-child > * {
-    margin-right: 4px;
-  }
-  .frame > :last-child > * {
-    margin-left: 4px;
-  }
-  .frame > * > :first-child {
-    margin-top: 8px;
-  }
-  .frame > * > :last-child {
-    margin-bottom: 8px;
-  }
-  .centerer {
-    text-align: center;
-  }
-  #console {
-    height: 150px;
-  }
-  .automata-display {
-    position: relative;
-    overflow: auto;    
-  }
-  automata-visualisation {
-    position: relative;
-    height: 250px;
-    margin-top: 2px;
-    margin-right: 2px;
-    margin-bottom: 2px;
-    margin-left: 2px;
-    border: solid 1px var(--dark-primary-color);
-    resize: vertical;
-    overflow: hidden;
-  }
-  #main-toolbar span.spacer{
-    margin-right: 16px;
-    width: 0;
-  }
-  #btn-compile {
-    background: var(--accent-color);
-    height: 24px;
-    box-sizing: content-box;
-    position: relative;
-  }
-  #btn-compile iron-icon {
-    --iron-icon-height: 32px;
-    --iron-icon-width: 32px;
-    position: absolute;
-    left: calc(50% - 16px);
-    right: 0;
-    top: calc(50% - 16px);
-    bottom: 0;
-  }
-  #chbx-live-compiling {
-    margin: 0 12px;
-    --paper-checkbox-unchecked-color: #ffffff;
-    --paper-checkbox-label-color: #ffffff;
-  }
-  #chbx-live-building {
-    margin: 0 12px;
-    --paper-checkbox-unchecked-color: #ffffff;
-    --paper-checkbox-label-color: #ffffff;
-  }
-  #chbx-fair-abstraction {
-    margin: 0 12px;
-    --paper-checkbox-uncheckd-color: #ffffff;
-    --paper-checkbox-label-color: #ffffff;
-  }
-  #filename {
-    --paper-input-container-color: #ffffff;
-    --paper-input-container-input-color: #ffffff;
-    position: relative;
-    bottom: calc(50% - 28px);
-  }
-  @media all and (max-width: 959px) {
-    .frame{
-      @apply(--layout-vertical);
-    }
-    .frame > * > *,
-    .frame > :first-child > *,
-    .frame > :last-child > * {
-      margin-top: 2px;
-      margin-right: 4px;
-      margin-bottom: 2px;
-      margin-left: 4px;
-    }
-    .frame > :first-child > :first-child{
-      margin-top: 4px;
-    }
-    .frame > :last-child > :last-child{
-      margin-bottom: 4px;
-    }
-    #editor{
-      min-height: 200px;
-      height: calc(95vh - 64px - 100px);
-    }
-    #console{
-      height: 100px;
-    }
-    #btn-compile {
-    }
-    #chbx-live-compiling {
-      margin: 0 6px;
-    }
-    #chbx-minimisation {
-      margin: 0 6px;
-    }
-  }
-  @media all and (max-width: 639px) {
-    .frame{
-      top: 56px;
-    }
-    paper-toolbar span.spacer{
-      margin-right: 0;
-      width: 0;
-      @apply(--layout-flex);
-    }
-    #editor{
-      height: calc(95vh - 56px - 100px);
-    }
-  }
-  </style>
+  <style is="custom-style" include="shared-styles"></style>
 </head>
 
 <body unresolved class="fullbleed layout vertical">
   <span id="browser-sync-binding"></span>
   <template is="dom-bind" id="app">
-    <iron-media-query query="(max-width: 959px)" query-matches="{{smallScreen}}"></iron-media-query>
-
     <automata-parser id="parser"></automata-parser>
 
     <!-- start toolbar -->
     <paper-toolbar id="main-toolbar">
-      <paper-button id="btn-compile" title="Compile and Build" raised on-tap="compileAndBuild" class="middle"><iron-icon icon="av:play-arrow"></iron-icon></paper-button>
-      <paper-checkbox id="chbx-live-compiling" checked="{{liveCompiling}}" class="middle" title="Automatically compile the automata as you define them.">
-        <span hidden$="{{smallScreen}}">Live Compiling</span>
-        <span hidden$="{{!smallScreen}}">Live</span>
-      </paper-checkbox>
-      <span class="spacer middle"></span>
-      <paper-checkbox id="chbx-live-building" checked="{{liveBuilding}}" class="middle" title="Automatically build the automata as you define them.">
-        <span hidden$="{{smallScreen}}">Live Building</span>
-        <span hidden$="{{!smallScreen}}">Live</span>
-      </paper-checkbox>
-      <span class="spacer middle"></span>
-      <paper-icon-button icon="icons:folder-open" class="middle" title="Open" on-tap="openFile"></paper-icon-button>
-      <input id="open-file" type="file" accept="text/plain" class="middle" style="display: none;"></input>
-      <span class="spacer middle"></span>
-      <paper-input id="filename" is="iron-input" label="Insert Filename Here" placeholder="untitled" bind-value="{{inputValue}}" class="middle" title="The name given to the file when it is downloaded."></paper-input>
-      <paper-icon-button icon="icons:file-download" class="middle" title="Download" on-tap="downloadFile"></paper-icon-button>
-      <span class="flex middle"></span>
-      <paper-checkbox id="chbx-fair-abstraction" checked="{{fairAbstraction}}" class="middle" title="Visualise abstracted automata fairly.">
-        <span hidden$="{{smallScreen}}">Fair Abstraction</span>
-        <span hidden$="{{!smallScreen}}">FAbs</span>
-      </paper-checkbox>
-      <paper-icon-button icon="icons:help" class="middle" title="Help" on-tap="showHelp"></paper-icon-button>
+      <paper-button id="btn-compile" title="Compile and Build (CTRL + ENTER)" raised on-tap="compileAndBuild"><iron-icon icon="app:compile"></iron-icon></paper-button>
+      <span class="spacer"></span>
+      <paper-icon-button icon="app:open" title="Open (CTRL + O)" on-tap="openFile"></paper-icon-button>
+      <input id="open-file" type="file" accept="text/plain" style="display: none;" />
+      <span class="spacer"></span>
+      <paper-input  id="filename" label="Insert Filename Here" type="text" placeholder="untitled" title="The name given to the file when it is downloaded."></paper-input>
+      <paper-icon-button icon="app:download" title="Download (CTRL + S)" on-tap="downloadFile"></paper-icon-button>
+      <span class="flex"></span>
+      <paper-icon-button icon="app:settings" title="Settings (F4)" on-tap="showSettings"></paper-icon-button>
+      <paper-icon-button icon="app:help" title="Help (F1)" on-tap="showHelp"></paper-icon-button>
     </paper-toolbar>
     <!-- end toolbar -->
 
-    <!-- start content -->
+    <!-- start main content -->
     <div class="frame">
-      <div class="layout vertical flex">
+      <div class="left">
         <text-editor autofocus id="editor" class="flex"></text-editor>
         <console-logger id="console"></console-logger>
       </div>
-      <div class="layout vertical flex">
-        <automata-walker automata="{{automata.values}}"></automata-walker>
-        <div class="automata-display">
-        <template is="dom-repeat" items="[[automata.values]]">
-          <automata-visualisation name="[[item.name]]" nodes="[[item.graph.nodes]]" edges="[[item.graph.edges]]"></automata-visualisation>
+      <div class="right">
+        <paper-material hidden$="[[arrayHasData(automata.values)]]">No automata have been defined.</paper-material>
+        <template id="automata-renderer" is="dom-repeat" items="[[automata.values]]" as="automaton">
+          <automaton-visualisation automaton="[[automaton]]" arrowhead="vee"></automaton-visualisation>
         </template>
-        </div>
       </div>
     </div>
-    <!-- end content -->
+    <!-- end main content -->
+
+    <!-- start settings dialog -->
+    <paper-dialog id="settings-dialog" with-backdrop opened="{{settingsDialogOpened}}" on-iron-overlay-opened="onSettingsOpened" on-iron-overlay-closed="onSettingsClosed">
+      <template is="dom-if" if="[[settingsDialogOpened]]">
+        <h2>Settings</h2>
+        <paper-icon-button class="btn-close" icon="app:cancel" title="Close" dialog-dismiss></paper-icon-button>
+        <div class="vertical layout">
+          <paper-checkbox id="settings-live-compiling" title="Automatically compile the automata as you define them.">
+            <span>Live Compiling</span>
+          </paper-checkbox>
+          <paper-checkbox id="settings-live-building" title="Automatically build the automata as you define them.">
+            <span>Live Building</span>
+          </paper-checkbox>
+          <paper-checkbox id="settings-fair-abstraction" title="Visualise abstracted automata fairly.">
+            <span>Fair Abstraction</span>
+          </paper-checkbox>
+          <h3>Editor Settings</h3>
+          <paper-checkbox id="settings-editor-wrap" title="Wrap text on to the text line if it is too long to fit onto one line.">
+            <span>Text Wrap</span>
+          </paper-checkbox>
+          <paper-checkbox id="settings-editor-soft-tabs" title="Use soft tabs in the text editor.">
+            <span>Soft Tabs</span>
+          </paper-checkbox>
+          <paper-item>
+            <span>Font Size:</span>
+            <paper-input id="settings-editor-font-size" no-label-float type="number" label="Font Size" min="10" max="72">
+              <span suffix>px</span>
+            </paper-input>
+          </paper-item>
+          <paper-item>
+            <span>Tab Size:</span>
+            <paper-input id="settings-editor-tab-size" no-label-float type="number" label="Tab Size" min="1" max="8"></paper-input>
+          </paper-item>
+        </div>
+        <div class="buttons">
+          <paper-button dialog-dismiss>Cancel</paper-button>
+          <paper-button dialog-confirm autofocus>OK</paper-button>
+        </div>
+      </template>
+    </paper-dialog>
+    <!-- end settings dialog -->
 
     <!-- start help-dialog -->
-    <paper-dialog id="help-dialog" with-backdrop>
-      <div class="title-bar">
+    <paper-dialog id="help-dialog" with-backdrop opened="{{helpDialogOpened}}">
+      <template is="dom-if" if="[[helpDialogOpened]]">
         <h2>Help</h2>
-        <paper-icon-button class="btn-close" icon="icons:cancel" title="Exit" dialog-dismiss></paper-icon-button>
-        <paper-tabs selected="{{helpDialogSelectedTab}}">
+        <paper-icon-button class="btn-close" icon="app:cancel" title="Close" dialog-dismiss></paper-icon-button>
+        <paper-tabs selected="{{helpDialogSelectedTab}}" no-bar>
           <paper-tab>Creating Automata</paper-tab>
-          <paper-tab>UI Overview</paper-tab>
+          <paper-tab>Second Tab</paper-tab>
+          <paper-tab>Third Tab</paper-tab>
         </paper-tabs>
-      </div>
-      <paper-dialog-scrollable class="fit">
-        <neon-animated-pages selected="{{helpDialogSelectedTab}}" class="fit">
-          <section class="page">
-            <h3>Examples:</h3>
-            <h4>Example 1: Sequence</h4>
-            <div class="centerer">
-              <div class="fwidth"><code>Example1 = action -> STOP.</code></div><br><br>
-              <img src="images/help-dialog/example1.png"></img>
-            </div>
+        <paper-dialog-scrollable>
+          <iron-pages selected="{{helpDialogSelectedTab}}">
+            <section class="page">
+              <div class="group">
+                <h3 class="name">Structure</h3>
+                <p class="description">
+                  Multiple automata can be defined in the same file.<br>
+                  Each automaton is first given a name which must begin with a capital letter.
+                  This is then followed by an equals sign <code class="inline">=</code> then its definition and finally a dot <code class="inline">.</code>.<br>
+                  <code class="block">AutomatonName = <em>{some definition}</em>.</code>
+                </p>
+              </div>
 
-            <h4>Example 2: Choice</h4>
-            <div class="centerer">
-              <div class="fwidth"><code>Example2 = x -> STOP | y -> ERROR.</code></div><br><br>
-              <img src="images/help-dialog/example2.png"></img>
-            </div>
+              <div class="group">
+                <h3 class="name">Sequences</h3>
+                <p class="description">
+                  Create a transition path from the current state to the next state with the specified label.
+                </p>
+                <div class="example">
+                  <h4 class="name">Example:</h4>
+                  <h5 class="subtitle">Input:</h5>
+                  <code class="block">Example1 = action -> STOP.</code>
+                  <h5 class="subtitle">Output:</h5>
+                  <iron-image src="images/help-dialog/example1.png" width="464" height="134" sizing="contain"></iron-image>
+                </div>
+              </div>
 
-            <h4>Example 3: Simple Referencing</h4>
-            <div class="centerer">
-              <div class="fwidth"><code>A = x -> B.<br>B = y -> STOP.</code></div><br><br>
-              <img src="images/help-dialog/example3.png"></img>
-            </div>
+              <div class="group">
+                <h3 class="name">Choices</h3>
+                <p class="description">
+                  Create a transition path from the current state to each of the specified states with the respective label.
+                </p>
+                <div class="example">
+                  <h4 class="name">Example:</h4>
+                  <h5 class="subtitle">Input:</h5>
+                  <code class="block">Example2 = x -> STOP | y -> ERROR.</code>
+                  <h5 class="subtitle">Output:</h5>
+                  <iron-image src="images/help-dialog/example2.png" width="464" height="209" sizing="contain"></iron-image>
+                </div>
+              </div>
 
-            <h4>Example 4: Referencing</h4>
-            <div class="centerer">
-              <div class="fwidth"><code>A = u -> (w -> A | x -> B).<br>B = y -> A | z -> STOP.</code></div><br><br>
-              <img src="images/help-dialog/example4.png"></img>
-            </div>
+              <div class="group">
+                <h3 class="name">Terminals</h3>
+                <p class="description">
+                  A terminal is a way for the automaton to end.<br>
+                  There are two types of terminals, each is drawn as double bordered circle:<br>
+                  <code class="inline">STOP</code> which is green and indicates a successful termination, and
+                  <code class="inline">ERROR</code> which is red and indicates an unsuccessful termination.
+                </p>
+              </div>
 
-            <h3>Operations:</h3>
-            <table class="t1">
-              <thead>
-                <tr>
-                  <th class="name">Name</th>
-                  <th class="use">Use</th>
-                  <th class="description">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="name">Sequence</td>
-                  <td class="use">[label] <span class="symbol">&dash;&gt;</span> [next state]</td>
-                  <td class="description">Create a transition path from the current state to the next state with the specified label.</td>
-                </tr><tr>
-                  <td class="name">Choice</td>
-                  <td class="use">[label A] &dash;&gt; [state A] <span class="symbol">|</span> [label B] &dash;&gt; [state B]</td>
-                  <td class="description">Create a transition path from the current state to each of the specified states with the respective label.</td>
-                </tr><tr>
-                  <td class="name">Parallel <span class="note">(Not yet supported)</span></td>
-                  <td class="use">[state A] <span class="symbol">||</span> [state B]</td>
-                  <td class="description"></td>
-                </tr>
-              </tbody>
-            </table>
+              <div class="group">
+                <h3 class="name">Referencing</h3>
+                <p class="description">
+                  One automaton can reference another automaton so long as it has already been defined by using its name.
+                </p>
+                <div class="example">
+                  <h4 class="name">Example:</h4>
+                  <h5 class="subtitle">Input:</h5>
+                  <code class="block">A = x -> y -> STOP.<br>B = z -> A.</code>
+                  <h5 class="subtitle">Output:</h5>
+                  <iron-image src="images/help-dialog/example3a.png" width="464" height="134" sizing="contain"></iron-image>
+                  <iron-image src="images/help-dialog/example3b.png" width="464" height="134" sizing="contain"></iron-image>
+                </div>
+              </div>
 
-            <h3>Terminals:</h3>
-            <table class="t1">
-              <thead>
-                <tr>
-                  <th class="name">Name</th>
-                  <th class="description">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="name">STOP</td>
-                  <td class="description">A successful termination.</td>
-                </tr><tr>
-                  <td class="name">ERROR</td>
-                  <td class="description">An unsuccessful termination.</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <h3>Grammar:</h3>
-            <span class="title">Automata Name:</span> First character must be an uppercase alphabet character. Following can be any alpha-numeric characters (excluding all whitespace).<br></br>
-            <span class="title">Edge Label:</span> First character must be a lowercase alphabet character. Following can be any alpha-numeric characters (excluding all whitespace).<br></br>
-            <span class="title">Definition End:</span> '.' <br></br><span class="title">Definition Assignment:</span> '=' <br></br><span class="title">Choice Operation:</span> '|'<br></br>
-            <span class="title">Sequence Operation:</span> '->' <br></br><span class="title">Sequence Stop:</span> 'STOP'
-          </section>
-          <section class="page">
-            <p>Starting from the toolbar from the top left, the pink compile button is used to compile your defined automata and display your automata.
-            You use the save and open buttons alongside this to open and save predifined automata.
-            The definition frame on the left below the main tool buttons is the input area for defining automata.
-            Refer to 'Automata Definition' for more information on how to define your automata.</p>
-            <div class="centerer"><img src="images/help-dialog/toolbar.png"></img></div>
-            <p>On the right is the automata frame and displays your automata outlined in the definition frame, once the compile button is used.
-              If their is an error in the definition, an alert will be shown on the console which can be found right beneath the text frame, outlining the error.
-              Just above the automata frame where the defined automata are pictured, is the walker tool.
-              The walker tool allows the navigation of the currently displayed automata by first selecting the automata you want to navigate, then selecting the edge to navigate down.
-              Clicking the walk button will confirm the selected options and walk through the automata one step.
-              The blue coloured node as shown below shows the current node that is being visited.</p>
-            <div class="centerer"><img src="images/help-dialog/walker.png"></img></div>
-          </section>
-        </neon-animated-pages>
-      </paper-dialog-scrollable>
-      <paper-icon-button="icons:cancel" title="Exit" on-tap="closehelp"></paper-icon-button>
+              <div class="group">
+                <h3 class="name">Sub-Automata</h3>
+                <p class="description">
+                  More complex automaton can be created by using sub-automata.<br>
+                  Sub-automata are defined after the main automaton and are comma seperated.<br>
+                  Sub-automata and the main automaton can each reference one another other.
+                </p>
+                <div class="example">
+                  <h4 class="name">Example:</h4>
+                  <h5 class="subtitle">Input:</h5>
+                  <code class="block">A = u -> (w -> A | x -> B),<br>B = y -> A | z -> STOP.</code>
+                  <h5 class="subtitle">Output:</h5>
+                  <iron-image src="images/help-dialog/example4.png" width="464" height="134" sizing="contain"></iron-image>
+                </div>
+              </div>
+            </section>
+            <section class="page">
+              No Content
+            </section>
+            <section class="page">
+              No Content
+            </section>
+          </iron-pages>
+        </paper-dialog-scrollable>
+      </template>
     </paper-dialog>
     <!-- end help-dialog -->
 
