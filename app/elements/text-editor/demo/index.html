@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+
+  <title>text-editor</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+  <link rel="import" href="../../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+
+  <link rel="import" href="../text-editor.html">
+
+  <style is="custom-style">
+    body {
+      position: relative;
+    }
+    .frame {
+      top: 5%;
+      right: 10%;
+      bottom: 10%;
+      left: 10%;
+      position: absolute;
+    }
+    text-editor {
+      @apply(--layout-fit);
+    }
+  </style>
+</head>
+<body class="fullbleed">
+  <div class="frame">
+    <text-editor autofocus
+      mode="ace/mode/javascript"
+      code='function hello() {\n\tconsole.log("Hello World");\n}'></text-editor>
+  </div>
+</body>
+</html>

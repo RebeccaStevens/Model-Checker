@@ -1,23 +1,53 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../styles/shared-styles.html">
 <link rel="import" href="../imports/ace.html">
+<link rel="import" href="../imports/helper-functions.html">
 
+<!--
+An element for accepting text content from the user.
+
+Example:<br>
+
+    <text-editor>console.log("Example of initial code.");</text-editor>
+
+### Styling
+
+The following custom properties and mixins are available for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--text-editor` | A mixin applied to the editor | `{}`
+
+@element text-editor
+@demo text-editor/demo/index.html
+-->
 <dom-module id="text-editor">
+  <style include="shared-styles"></style>
   <style>
     :host {
       display: block;
       position: relative;
     }
-    #editor{
+    paper-material {
+      padding: 0;
+      @apply(--layout-fit);
+    }
+    #editor {
       box-sizing: border-box;
       position: absolute;
       top: 0;
       right: 0;
       bottom: 0;
       left: 0;
+      @apply(--text-editor);
     }
   </style>
   <template>
-    <div id="editor"></div>
+    <paper-material>
+      <div id="editor"></div>
+    </paper-material>
   </template>
 </dom-module>
 <script>
@@ -26,11 +56,20 @@
     Polymer({
       is: 'text-editor',
 
+      /**
+       * Fired when the text in the editor is changed.
+       *
+       * @event code-changed
+       */
+
       properties: {
         /**
-         * If true the editor will be brought into focus automatically when the elements is added to the dom
-         *
-         * @default false
+         * The code in the editor.
+         */
+        code: String,
+
+        /**
+         * If true the editor will be brought into focus automatically when the elements is attached to the dom.
          */
         autofocus: {
           type: Boolean,
@@ -38,110 +77,352 @@
         },
 
         /**
-         * The amount of time before a text-editor-change event is fired after the editor's content changes.
-         *
-         * @default 1000
+         * The ace theme to use.
          */
-        changeEventDebounceTime: {
+        theme: {
+          type: String,
+          observer: '_onThemeChanged'
+        },
+
+        /**
+         * The ace mode to use.
+         */
+        mode: {
+          type: String,
+          value: 'ace/mode/text',
+          observer: '_onModeChanged'
+        },
+
+        /**
+         * The font size to use.
+         */
+        fontSize: {
           type: Number,
-          value: 1000,
-          notify: true
+          value: 16,
+          observer: '_onFontSizeChanged'
         },
 
         /**
-         * the text editor
+         * If true, soft tabs will be used.
          */
-        _editor: {
-          type: Object,
-          value: function(){
-            var editor = ace.edit(this.$.editor);
-            editor.setTheme('ace/theme/github');
-            editor.getSession().setMode('ace/mode/plain_text'); // syntax highlighting
-            return editor;
-          },
-          readOnly: true
-        },
-
-        /**
-         * don't fire a 'text-editor-change' event the next time the editor's content changes
-         */
-        _skipNextCodeChangeEvent: {
+        softTabs: {
           type: Boolean,
           value: false,
-          readOnly: true
+          observer: '_onSoftTabsChanged'
+        },
+
+        /**
+         * The code can't be edited by the user.
+         */
+        readonly: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true,
+          observer: '_onReadonlyChanged'
+        },
+
+        /**
+         * If true, text will be wrapped to the next line if it is too long.
+         */
+        wrap: {
+          type: Boolean,
+          value: false,
+          observer: '_onWrapChanged'
+        },
+
+        /**
+         * If true, text will be wrapped to the next line if it is too long.
+         */
+        tabSize: {
+          type: Number,
+          value: 4,
+          observer: '_onTabSizeChanged'
+        },
+
+        /**
+         * The ace editor object
+         */
+        _editor: Object,
+
+        /**
+         * This stores the `code` before the ace text editor is ready.
+         */
+        _initialCode: {
+          type: String,
+          value: function() {
+            return this.textContent.trim();
+          }
+        },
+
+        /**
+         * The annotations in the text editor.
+         */
+        _annotations: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        },
+
+        /**
+         * Set to true once the editor has been initialized.
+         */
+        _initialized: {
+          type: Boolean,
+          value: false
         }
       },
 
       /**
-       * Get the code the user has provided
-       * @return {string} The code
-       */
-      getCode: function(){
-        return this._editor.getValue();
-      },
-
-      /**
-       * Set the code.
-       *
-       * @param {!string} code - The code
-       */
-      setCode: function(code){
-        this._set_skipNextCodeChangeEvent(true);
-        this._editor.setValue(code, 1);
-        this.fire('text-editor-change');
-      },
-      /**
-       * constructs and returns an annotation.
+       * Add an annotation to the editor.
        *
        * @param {!integer} line - the line number to put annotation on
        * @param {!string} text - the text to put in the annotation
-       * @oaram {!string} type - the type of annotation to place
-       * @returns {!object} - an annotation object
+       * @param {!string} type - the type of annotation to place
        */
-      constructAnnotation: function(line, text, type) {
+      addAnnotation: function(line, text, type) {
         var annotation = {
           row: line,
           column: 2,
           text: text,
-          type: type         
-        }
+          type: type
+        };
 
-        return annotation;
+        this.push('_annotations', annotation);
+        this._editor.session.setAnnotations(this._annotations);
       },
 
       /**
-       * Sets the annotations of the editor to those specified in the array.
-       *
-       * @param {!array} annotations - an array of annotations
+       * Clear all the annotations on the editor.
        */
-      setAnnotations: function(annotations) {
-        this._editor.session.setAnnotations(annotations);
+      clearAnnotations: function() {
+        this.set('_annotations', []);
+        this._editor.session.setAnnotations(this._annotations);
       },
 
       /**
-       * Bring this element into focus
+       * Bring this element into focus.
        */
-      focus: function(){
+      focus: function() {
         this._editor.focus();
       },
 
-      ready: function(){
-        if(this.autofocus){
-          this.focus();
+      /**
+       * Called when the element has been created, but before property values are set and local DOM is initialized.
+       */
+      created: function() {
+
+        var initCode = this.getAttribute('code'); // get any initial code given as an attribute
+
+        // if there is some initCode
+        if (initCode) {
+          // set `_initialCode` to in - replace special characters
+          this._initialCode = initCode
+            .replaceAll('\\n', '\n')
+            .replaceAll('\\t', '\t');
         }
 
-        // fire a 'text-editor-change' event when the text editor's content changes
-        this._editor.on('change', function() {
-          if (this._skipNextCodeChangeEvent){
-            this._set_skipNextCodeChangeEvent(false);
-            return;
+        // Define `this.code`'s getter and setter.
+        // This will override the code property defined in the properties object.
+        Object.defineProperty(this, 'code', {
+          get: function() {
+            if (this._initialized) {
+              return this._editor.getValue();
+            }
+            return this._initialCode;
+          },
+          set: function(val) {
+            if (this._initialized) {
+              return this._editor.setValue(val, 1);
+            }
+            this._initialCode = val;
+            return this._initialCode;
+          }
+        });
+      },
+
+      /**
+       * Called after property values are set and local DOM is initialized.
+       */
+      ready: function() {
+        this._initializeEditor();
+      },
+
+      /**
+       * Called after the element is attached to the document.
+       */
+      attached: function() {
+        if (this.autofocus) {
+          this.async(function() {
+            this.focus();
+          }, 100);
+        }
+      },
+
+      /**
+       * Called when `theme` changes.
+       */
+      _onThemeChanged: function() {
+        if (this._initialized) {
+          this._editor.setTheme(this.theme);
+          this._injectTheme(this.theme);
+        }
+      },
+
+      /**
+       * Called when `mode` changes.
+       */
+      _onModeChanged: function() {
+        if (this._initialized) {
+          this._editor.getSession().setMode(this.mode);
+        }
+      },
+
+      /**
+       * Called when `fontSize` changes.
+       */
+      _onFontSizeChanged: function() {
+        if (this._initialized) {
+          this._editor.setFontSize(Number.parseInt(this.fontSize, 10));
+        }
+      },
+
+      /**
+       * Called when `softTabs` changes.
+       */
+      _onSoftTabsChanged: function() {
+        if (this._initialized) {
+          this._editor.getSession().setUseSoftTabs(this.softTabs);
+        }
+      },
+
+      /**
+       * Called when `tabsSize` changes.
+       */
+      _onTabSizeChanged: function() {
+        if (this._initialized) {
+          this._editor.getSession().setTabSize(Number.parseInt(this.tabSize, 10));
+          this._editor.renderer.updateCursor();
+        }
+      },
+
+      /**
+       * Called when `readonly` changes.
+       */
+      _onReadonlyChanged: function() {
+        if (this._initialized) {
+          if (this.readonly !== null && typeof this.readonly !== 'boolean') {
+            this.readonly = true;
+          }
+          this._editor.setReadOnly(this.readonly);
+        }
+      },
+
+      /**
+       * Called when `wrap` changes.
+       */
+      _onWrapChanged: function() {
+        if (this._initialized) {
+          this._editor.getSession().setUseWrapMode(this.wrap);
+        }
+      },
+
+      /**
+       * Initialize the editor.
+       */
+      _initializeEditor: function() {
+        this._editor = ace.edit(this.$.editor); // turn `this.$.editor` into a text editor
+        this._initialized = true;    // `_editor` has been initialized
+
+        this._editor.$blockScrolling = Infinity;   // disable scrolling warning messgae
+
+        // ace.config.set('basePath', this.resolveUrl('../ace-builds/src-min-noconflict/'));
+
+        // fire a 'code-changed' event when the text editor's content changes
+        this._editor.addEventListener('change', function(e) {
+          this.fire('code-changed', {originalEvent: e});
+        }.bind(this));
+
+        this.code = this._initialCode;
+
+        // initialize the fields now that the editor is ready
+        if (this.theme !== undefined) {
+          this._onThemeChanged();
+        }
+        if (this.mode !== undefined) {
+          this._onModeChanged();
+        }
+        if (this.fontSize !== undefined) {
+          this._onFontSizeChanged();
+        }
+        if (this.softTabs !== undefined) {
+          this._onSoftTabsChanged();
+        }
+        if (this.tabSize !== undefined) {
+          this._onTabSizeChanged();
+        }
+        if (this.readonly !== undefined) {
+          this._onReadonlyChanged();
+        }
+        if (this.wrap !== undefined) {
+          this._onWrapChanged();
+        }
+
+        // if we are using the shadow dom (not the shady dom)
+        if (Polymer.Settings.useShadow) {
+          // we need to copy the stylings from the main document to this element's shadow root
+          // as ace is putting its stylings in the wrong place
+          this.shadowRoot.appendChild(this._cloneStyle(document.getElementById('ace_editor.css')));
+          this.shadowRoot.appendChild(this._cloneStyle(document.getElementById('ace-tm')));
+        }
+      },
+
+      /**
+       * Inject an ace theme style into this element.
+       *
+       * @param {!String} theme - the name/path of the ace theme to use
+       */
+      _injectTheme: function(theme) {
+        // this is only needed when using the shadow dom (not the shady dom)
+        if (Polymer.Settings.useShadow) {
+          var id = 'ace-' + theme.substring(theme.lastIndexOf('/') + 1);  // the id of this theme
+
+          // does the element already have this theme style loaded?
+          if (Polymer.dom(this).querySelector('#' + id) !== null) {
+            return;   // if so, we don't need to do any thing else
           }
 
-          // merge multiple events into one (debounce them)
-          this.debounce('text-editor-change', function() {
-            this.fire('text-editor-change');
-          }, this.changeEventDebounceTime);
-        }.bind(this));
+          var style = document.getElementById(id);  // does the style element aready exist in the document
+
+          // if so, simply copy it
+          if (style) {
+            this.shadowRoot.appendChild(this._cloneStyle(style));
+          }
+          // if not, wait until it does then copy it
+          else {
+            var copyTheme = function(e) {
+              if (e.srcElement.id === id) {
+                this.shadowRoot.appendChild(this._cloneStyle(e.srcElement));
+                document.head.removeEventListener('DOMNodeInserted', copyTheme, false);
+              }
+            }.bind(this);
+
+            // wait until the theme is injected into the head, then copy it to this element
+            document.head.addEventListener('DOMNodeInserted', copyTheme, false);
+          }
+        }
+      },
+
+      /**
+       * Helper function to clone a style tag.
+       *
+       * @param {!HTMLStyleElement} style - the style element to copy
+       */
+      _cloneStyle: function(style) {
+        var s = document.createElement('style');
+        s.id = style.id;
+        s.textContent = style.textContent;
+        return s;
       }
     });
   })();
