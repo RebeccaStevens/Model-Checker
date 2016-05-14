@@ -1,28 +1,64 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../styles/shared-styles.html">
+<link rel="import" href="../imports/helper-functions.html">
 
+<!--
+An element for displaying console text messages.
+
+Example:<br>
+
+    <console-logger></console-logger>
+
+### Styling
+
+The following custom properties and mixins are available for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--console-logger-log-text-color` | The color of logged text | `blue`
+`--console-logger-warn-text-color` | The color of warning text | `orange`
+`--console-logger-error-text-color` | The color of error text | `error`
+`--console-logger-log-text` | A mixin applied to logged text | `{}`
+`--console-logger-warn-text` | A mixin applied to warning text | `{}`
+`--console-logger-error-text` | A mixin applied to error text | `{}`
+
+@element console-logger
+@demo console-logger/demo/index.html
+-->
 <dom-module id="console-logger">
+  <style include="shared-styles"></style>
   <style>
     :host {
       display: block;
-      overflow: auto;
-      padding: 0 8px;
+      position: relative;
     }
-    #console{
+    paper-material {
+      padding: 4px;
+      overflow: auto;
+      @apply(--layout-fit);
+    }
+    #console {
       box-sizing: border-box;
     }
-    .log{
-      color: var(--log-text-color, blue);
+    .log {
+      color: var(--console-logger-log-text-color, blue);
+      @apply(--console-logger-log-text);
     }
-    .warn{
-      color: var(--log-text-color, orange);
+    .warn {
+      color: var(--console-logger-warn-text-color, orange);
+      @apply(--console-logger-warn-text);
     }
-    .error{
-      color: var(--error-text-color, red);
+    .error {
+      color: var(--console-logger-error-text-color, red);
+      @apply(--console-logger-error-text);
     }
   </style>
   <template>
-    <code id="console"></code>
+    <paper-material id="material">
+      <code id="console"></code>
+    </paper-material>
   </template>
 </dom-module>
 <script>
@@ -30,39 +66,72 @@
     Polymer({
       is: 'console-logger',
 
-      clear: function(lines){
+      /**
+       * Clear the console.
+       *
+       * @param {integer} [lines] - if set, the number of lines to clear, otherwise clear everything
+       */
+      clear: function(lines) {
         var c = Polymer.dom(this.$.console);
         if (lines) {
-          for (lines = Number.parseInt(lines); lines > 0; lines--){
-            c.removeChild(c.lastChild); // content
-            c.removeChild(c.lastChild); // line break
+          var i = c.children.length - lines;
+          for (lines = Number.parseInt(lines); i >= 0 && lines > 0; lines--) {
+            c.removeChild(c.children[i]);
           }
-          return;
+        } else {
+          c.innerHTML = '';
         }
-        c.innerHTML = '';
       },
 
-      log: function(msg){
-        this._addMessage(msg).classList.add('log');
+      /**
+       * Log a message.
+       *
+       * @param {!string} msg - the message
+       */
+      log: function(msg) {
+        msg = msg || '';
+        var node = this._addMessage(msg);
+        node.addClass('log');
       },
 
-      warn: function(msg){
-        this._addMessage(msg).classList.add('warn');
+      /**
+       * Log a message as a warning.
+       *
+       * @param {!string} msg - the message
+       */
+      warn: function(msg) {
+        msg = msg || '';
+        var node = this._addMessage(msg);
+        node.addClass('warn');
       },
 
-      error: function(msg){
-        this._addMessage(msg).classList.add('error');
+      /**
+       * Log a message as an error.
+       *
+       * @param {!string} msg - the message
+       */
+      error: function(msg) {
+        msg = msg || '';
+        var node = this._addMessage(msg);
+        node.addClass('error');
       },
 
-      _addMessage: function(msg){
+      /**
+       * Add the given message to console.
+       *
+       * @private
+       * @param {!string} msg - the message
+       * @returns {!HTMLElement} - the element that was added
+       */
+      _addMessage: function(msg) {
+        msg = msg.replaceAll(' ', '\u00A0'); // replace spaces with unicode space (this allows leading white space)
         var text = document.createTextNode(msg);
         var node = document.createElement('SPAN');
         node.appendChild(text);
+        node.appendChild(document.createElement('BR'));
 
-        var c = Polymer.dom(this.$.console);
-        c.appendChild(node);
-        c.appendChild(document.createElement('BR'));
-        c.scrollTop = c.scrollHeight;
+        Polymer.dom(this.$.console).appendChild(node);
+        this.$.material.scrollTop = this.$.material.scrollHeight - this.$.material.clientHeight;
 
         return node;
       }
