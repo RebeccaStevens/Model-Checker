@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+
+  <title>app-icons demo</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="../../../bower_components/paper-styles/demo-pages.html">
+  <link rel="import" href="../../../bower_components/paper-styles/color.html">
+  <link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+  <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+  <link rel="import" href="../app-icons.html">
+
+  <style is="custom-style">
+
+    h2 {
+      text-transform: capitalize;
+    }
+
+    iron-icon {
+      transition: all 0.2s;
+      -webkit-transition: all 0.2s;
+    }
+
+    iron-icon:hover {
+      fill: var(--google-yellow-700);
+    }
+
+    .set {
+      margin: auto;
+      padding: 1em 0;
+      border-bottom: 1px solid silver;
+      @apply(--layout-horizontal);
+      @apply(--layout-wrap);
+    }
+
+    .set:last-of-type {
+      border-bottom: none;
+    }
+
+    .set:nth-of-type(4n-3) {
+      color: var(--paper-grey-700);
+    }
+
+    .set:nth-of-type(4n-2) {
+      color: var(--paper-pink-500);
+    }
+
+    .set:nth-of-type(4n-1) {
+      color: var(--google-green-500);
+    }
+
+    .set:nth-of-type(4n) {
+      color: var( --google-blue-500);
+    }
+
+    .container {
+      min-width: 10em;
+      padding: 1em 0.5em;
+      text-align: center;
+      @apply(--layout-vertical);
+      @apply(--layout-center);
+      @apply(--layout-flex-1);
+    }
+
+    .container > div {
+      margin-top: 0.5em;
+      color: black;
+      font-size: 10px;
+    }
+
+  </style>
+
+</head>
+<body>
+
+  <template is="dom-bind">
+
+   <iron-meta type="iconset" list="{{iconsets}}"></iron-meta>
+
+    <template is="dom-repeat" items="{{iconsets}}">
+
+      <h2>{{item.name}}</h2>
+
+      <div class="set">
+
+        <template is="dom-repeat" items="{{getIconNames(item)}}">
+
+          <span class="container">
+            <iron-icon icon="{{item}}"></iron-icon>
+            <div>{{item}}</div>
+          </span>
+
+        </template>
+
+      </div>
+
+    </template>
+
+  </template>
+
+  <script>
+
+    document.querySelector('[is=dom-bind]').getIconNames = function(iconset) {
+      return iconset.getIconNames();
+    };
+
+  </script>
+
+</body>
+</html>
