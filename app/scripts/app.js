@@ -6,11 +6,11 @@
   /**
    * Return whether or not the given array has a length greater than zero.
    *
-   * @param {!array} array - an array
+   * @param {array} array - an array
    * @returns {boolean}
    */
   app.arrayHasData = function(array) {
-    return array.length > 0;
+    return array && array.length > 0;
   };
 
   window.addEventListener('WebComponentsReady', function() {
