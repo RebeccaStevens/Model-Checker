@@ -1,4 +1,6 @@
 # Model-Checker
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/RebeccaStevens/Model-Checker.svg)](https://greenkeeper.io/)
 [Currently hosted application](http://modelchecker-swen302.herokuapp.com/).    
 NB: URL may change and this link will be useless.   
 Streader's Raiders SWEN302 Group Project
